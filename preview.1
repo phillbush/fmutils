@@ -1,0 +1,29 @@
+.TH preview 1
+.SH NAME
+preview \- generate text preview of file
+.SH SYNOPSIS
+.B preview
+.I file
+.RI [ height " [" width ]]
+.SH DESCRIPTION
+.B preview
+generates a text containing data and/or metadata of a file,
+this text is intended to be used as a preview for that file.
+The first argument is the file to be previewd,
+the second and third argument are the height and width (in characters) of the preview text.
+.PP
+.B preview
+is intended to be used by a file manager such as
+.IR lf (1)
+or
+.IR ranger (1).
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B >0
+Error occurred.
+.SH SEE ALSO
+.IR lf (1),
+.IR ranger (1)

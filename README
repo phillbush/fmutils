@@ -1,0 +1,72 @@
+                                FMUtils
+
+FMUtils are a set of POSIX scripts that implement some handy file
+management utilities.  Each script has its respective manual page.
+
+The scripts are the following.
+• bulkrename: Bulk rename files with your text editor.
+• pick:       Interactivelly select options.
+• preview:    Generate text preview of a file to be used by lf(1) or ranger(1).
+• skel:       Create a template file in the current directory.
+• trash:      Move files to trash following XDG trash specification.
+• untrash:    Remove files fropoint to m trash following XDG trash specification.
+• unpack:     Unarchive archived files (.zip, .rar, .tar.gz, etc).
+• xopen:      Open file or URL with an application.
+
+
+§ Installation
+
+First, edit ./config.mk to match your local setup.
+
+Since FMUtils are just script, they do not need to be built.
+
+By default, FMUtils are installed into the /usr/local prefix.  Enter the
+following command to install FMUtils (if necessary as root).  This command
+installs the scripts into the ${PREFIX}/bin/ directory, and the manual
+pages into the ${MANPREFIX}/man1/ directory.
+
+	make install
+
+
+§ Running FMUtils
+
+The following are examples of how to use FMUtils.
+
+Bulk rename all files in the current directory:
+	$ ls | bulkrename
+
+Bulk rename all .jpg files in the ~/Downloads directory:
+	$ bulkrename ~/Downloads/*.jpg
+
+Pick can be used to interactivelly remove files with rm(1).  This
+example is equivalent to `rm -i`, but can be used with other commands
+that, unlike rm(1), does not provide a -i option.
+	$ rm $(pick *)
+
+The previous example rely on the condition that each filename does not
+contain space on it.  The following example avoid this by using a
+quotion option, such as -q on pick(1), and a pipe into xargs(1):
+	$ pick -q * | xargs rm
+
+Add the following line to your ~/.config/lf/lfrc to use preview(1) as
+file previewer.
+	set previewer preview
+
+Move all .jpg files to trash:
+	$ trash *.jpg
+
+Remove all .jpg files from trash (the environment variable $TRASH is
+supposed to have the path of the trash)
+	$ untrash $TRASH/files/*.jpg
+
+Extract the content of file.zip into your home directory.
+	$ unpack file.zip $HOME
+
+Open a file with the default application specified, as specified in the
+file whose path is in the environment variable $MIMEFILE.
+	$ xopen file.jpg
+
+
+§ License
+
+This software is in public domain and is provided AS IS, with NO WARRANTY.

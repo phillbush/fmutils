@@ -1,0 +1,63 @@
+#!/bin/sh
+# unpack - unarchive archive files
+# this file in public domain
+
+set -f -e -u
+
+usage()
+{
+	echo "usage: unpack file [destdir]" >&2
+	exit 1
+}
+
+unpack()
+{
+	if [ ! -f "$1" ]
+	then
+		echo "unpack: $1: not a regular file"
+		exit 1
+	fi
+
+	if [ ! -d "$2" ]
+	then
+		echo "unpack: $2: not a directory"
+		exit 1
+	fi
+
+	case "$(file -ib "$1" | cut -d';' -f1)" in
+	application/gzip|application/x-gzip)
+		tar xzvf "$1" -C "$2" >/dev/null
+		;;
+	application/bzip2|application/x-bzip2)
+		tar xjvf "$1" -C "$2" >/dev/null
+		;;
+	application/tar|application/x-tar)
+		tar xvf "$1" -C "$2" >/dev/null
+		;;
+	application/zip)
+		unzip -d "$2" "$1" >/dev/null
+		;;
+	application/x-rar)
+		unrar x "$1" "$2" >/dev/null
+		;;
+	application/x-7z-compressed)
+		7z x -o"$2" "$1" >/dev/null
+		;;
+	*)
+		echo "unpack: $1: not an archive file"
+		exit 1
+		;;
+	esac
+
+	echo "extracted $1 to $2"
+}
+
+[ $# -eq 0 -o $# -gt 2 ] && usage
+
+if [ $# -eq 2 ]
+then
+	dir=$2
+else
+	dir=$PWD
+fi
+unpack "$1" "$dir"

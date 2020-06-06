@@ -1,0 +1,71 @@
+#!/bin/sh
+# untrash: restore files from trash
+# this file in public domain
+
+usage() {
+	echo "usage: trash file..." >&2
+	exit 1
+}
+
+# get info file of deleted file $2 in path $1
+getinfo() {
+	echo "$1/../info/$2.trashinfo"
+}
+
+# get original name of deleted file $2 on info file $1
+getorigfile() {
+	echo "$(cat $1 | awk -F= '/Path=/ {print $NF}')"
+}
+
+[ $# -eq 0 ] && usage
+
+for f in "$@"; do
+	if [ ! -e "$f" ]
+	then
+		echo "trash: $f: no such file or directory" >&2
+		exit 1
+	fi
+
+	filename="$(readlink -f "$f")"
+	basename="$(basename "$f")"
+
+	# get directory of deleted files
+	filesdir="$(dirname "$filename")"
+	if [ "$(basename $filesdir)" != "files" ]
+	then
+		echo "trash: $basename: file is not in trash" >&2
+		exit 1
+	fi
+
+	# get file containing information on deleted file
+	infofile="$(getinfo "$filesdir" "$basename")"
+	if [ ! -f "$infofile" ]
+	then
+		echo "trash: $basename: cannot find original directory" >&2
+		exit 1
+	fi
+
+	# get original name of deleted file
+	origfile="$(getorigfile "$infofile" "$basename")"
+	if [ -e "$origfile" ]
+	then
+		echo "trash: $basename: file already exists on original directory" >&2
+		exit 1
+	fi
+
+	# move deleted file to its original place
+	if ! mv "$filename" "$origfile"
+	then
+		echo "trash: $basename: cannot move file to its original directory" >&2
+		exit 1
+	fi
+
+	# remove deleted file's information file
+	if ! rm "$infofile"
+	then
+		echo "trash: $basename: cannot clean file from trash" >&2
+		exit 1
+	fi
+done
+
+exit 0

@@ -1,0 +1,85 @@
+#!/bin/sh
+# preview: print text preview of file
+# this file in public domain
+
+set -C -f -u 
+
+LINES=${2:-20}
+COLUMNS=${3:-72}
+IFS='
+'
+
+usage() {
+	echo "usage: preview filename" >&2
+	exit 1
+}
+
+# get file extension
+getextension() {
+	echo "${1##*.}" | tr '[:upper:]' '[:lower:]'
+}
+
+# get file mimetype
+getfilemime() {
+	file -ib "$@" | cut -d';' -f1
+}
+
+# center first n lines
+center() {
+	n=0;
+	while read -r line; do
+		if [ $n -lt "$1" ]
+		then
+			printf "%*s\n" $(( (${#line} + COLUMNS) / 2)) "$line"
+			n=$((n+1))
+		else
+			echo $line
+		fi
+	done
+}
+
+# preview file and exit
+preview() {
+	case "$2" in
+	a|ace|alz|arc|arj|bz|bz2|cab|cpio|deb|gz|jar|lha|lz|lzh|lzma|lzo|\
+	rpm|rz|t7z|tar|tbz|tbz2|tgz|tlz|txz|tZ|tzo|war|xpi|xz|Z|zip|7z)
+		bsdtar -tf "$1"
+		exit
+		;;
+	pdf)
+		pdftotext -layout -l 10 -- "$1" - | center 4
+		exit
+		;;
+	htm|html|xhtml)
+		w3m -dump "$1"
+		exit
+		;;
+	1|2|3|4|5|6|7|8|9)
+		MANWIDTH="$COLUMNS" man -T ascii "$(readlink -f $1)" | sed 's/.//g'
+		exit
+		;;
+	text/*|*/xml|application/x-shellscript)
+		cat "$1"
+		exit
+		;;
+	image/*)
+		exiftool "$1" 
+		exit
+		;;
+	video/*|audio/*|application/octet-stream)
+		mediainfo "$1"
+		exit
+		;;
+	esac
+}
+
+[ "$#" -eq 0 ] && usage
+
+extension="$(getextension $1)"
+mimetype="$(getfilemime $1)"
+
+preview "$1" "$extension"    # try first to preview by file extension
+preview "$1" "$mimetype"     # then try to preview by mimetype
+
+echo '----- File Type Classification -----'
+file -b "$1"

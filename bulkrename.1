@@ -1,0 +1,56 @@
+.TH bulkrename 1
+.SH NAME
+bulkrename \- edit filenames interactively within editor
+.SH SYNOPSIS
+.B bulkrename
+.RI [ arg ...]
+.SH DESCRIPTION
+.B bulkrename
+receives filenames from its arguments (one per argument) or from stdin
+(one per line) and opens an editor to edit them; then, it renames each
+file to the corresponding edited one.
+.PP
+If there are no arguments,
+.B bulkrename
+operates on stdin, reading one filename per line.
+If there are arguments,
+each argument is read as a filename.
+.PP
+The environment variables
+.B $EDITOR " and " $VISUAL
+are checked, in this order, for an editor program.
+If both are unset, use
+.IR vi (1)
+by default.
+.SH ENVIRONMENT
+The following environment variables affect the execution of
+.B bulkrename
+.TP
+.B EDITOR
+The editor to be used.
+.TP
+.B VISUAL
+The editor to be used if
+.B $EDITOR
+is not set.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B >0
+Error occurred.
+.SH EXAMPLES
+Bulk rename all files in current directory (using stdin):
+.IP
+.EX
+$ ls | bulkrename
+.EE
+.PP
+Bulk rename all .jpg files in the ~/Downloads directory (using arguments):
+.IP
+.EX
+$ bulkrename ~/Downloads/*.jpg
+.EE
+.SH SEE ALSO
+.IR vi (1)

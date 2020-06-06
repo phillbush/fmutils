@@ -1,0 +1,64 @@
+#!/bin/sh
+# skel - create a template file in the current directory
+# this file in public domain
+
+set -f -e -u
+
+SKEL=${SKEL-$HOME/skel}
+
+usage() {
+	echo "usage: skel [template [name]]" >&2
+	exit 1
+}
+
+listskel() {
+	ls $SKEL
+	return 0
+}
+
+createskel() {
+	skelfile="${SKEL}/$1"
+	destfile="${PWD}/$2"
+
+	if [ ! -e "$skelfile" ]
+	then
+		printf "skel: %s: skeleton file does not exist\n" "$1" >&2
+		exit 1
+	fi
+
+	if [ -e "$destfile" ]
+	then
+		printf "skel: %s: destination file already exists\n" "$2" >&2
+		exit 1
+	else
+		echo cp -R "$skelfile" "$destfile"
+		cp -R "$skelfile" "$destfile"
+	fi
+}
+
+while getopts 'n' c
+do
+	case "$c" in
+	*)
+		usage
+		;;
+	esac
+done
+shift $((OPTIND -1))
+
+case $# in
+0)
+	listskel
+	;;
+1)
+	createskel $1 $1
+	;;
+2)
+	createskel $1 $2
+	;;
+*)
+	usage
+	;;
+esac
+
+exit 0

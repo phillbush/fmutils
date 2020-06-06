@@ -1,0 +1,102 @@
+#!/bin/sh
+# bulkrename: bulk rename files using $EDITOR and temporary files
+# this file in public domain
+
+set -f -e -u
+
+EDITOR="${EDITOR:-${VISUAL:-vi}}"
+
+usage()
+{
+	echo "usage: bulkrename [file...]" >&2
+	exit 1
+}
+
+# quote and escape filename for moving
+quote()
+{
+	echo "$1" | sed "s/'/'\\\\''/g; s/^/'/; s/\$/'/"
+}
+
+# populate the files $old and $new with filenames, one per line
+populatefiles()
+{
+	if [ $# -eq 0 ]
+	then                            # run on stdin
+		cat | tee "$old" > "$new"
+	else                            # run on arguments
+		for i
+		do
+			printf "%s\n" "$i" >> "$old"
+			printf "%s\n" "$i" >> "$new"
+		done
+	fi
+}
+
+# edit the filenames in $new and test if they are valid
+editfile()
+{
+	if [ "$(wc -l <"$old")" -ne "$(sort -u "$old" | wc -l)" ]
+	then
+		echo "bulkrename: repeated filenames to be renamed" >&2
+		exit 1
+	fi
+
+	"$EDITOR" "$new" </dev/tty
+
+	if [ $(wc -l <"$new") -ne $(wc -l <"$old") ]
+	then
+		echo "bulkrename: number of filenames not equal to number of files" >&2
+		exit 1
+	fi
+
+	if [ "$(wc -l <"$new")" -ne "$(sort -u "$new" | wc -l)" ]
+	then
+		echo "bulkrename: repeated target filenames" >&2
+		exit 1
+	fi
+}
+
+# create $cmd file
+createcmd()
+{
+	cat /dev/null >"$cmd"
+	while read -r from <&3 && read -r to <&4
+	do
+		if [ "$from" != "$to" ]
+		then
+			from=$(quote "$from")
+			to=$(quote "$to")
+			printf "mv %s\t%s\n" "$from" "$to" >> "$cmd"
+		fi
+	done 3<"$old" 4<"$new"
+}
+
+# remove temporary files
+cleanup()
+{
+	rm -f "$old" "$new" "$cmd"
+}
+
+while getopts 'h' c
+do
+	case "$c" in
+	h|*)
+		usage
+		;;
+	esac
+done
+shift $((OPTIND -1))
+
+old=$(mktemp)
+new=$(mktemp)
+cmd=$(mktemp)
+
+trap cleanup EXIT
+
+populatefiles "$@"
+editfile
+createcmd
+sh -x "$cmd"
+
+exit 0

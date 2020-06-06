@@ -1,0 +1,74 @@
+.TH TRASH 1
+.SH NAME
+trash \- move files to the trash can
+.SH SYNOPSIS
+.B trash
+.IR file ...
+.SH DESCRIPTION
+.B trash
+moves one or more files or directories to a directory called trash can,
+with a unique name resembling its original name;
+and create a file containing information on where the file came from and
+the time it was moved to the trash can.
+.PP
+There are one trash can for each partition in the system.
+The main trash can, specified by the environment variable
+.B TRASH
+corresponds to the partition of the user's
+.B $HOME
+directory.
+Each trash can stores the files moved from other place in the same partition.
+.SH ENVIRONMENT
+The following environment variables affect the execution of
+.B trash
+.TP
+.B TRASH
+The directory containing the trash can for the partition of the user's
+.B $HOME
+directory.
+.SH FILES
+Each trash can
+(represented here by the variable
+.BR $trashcan )
+is created with the proper permissions the first time the
+.B trash
+utility is used.
+It contains two subdirectories called
+.B $trashcan/files/
+and
+.BR $trashcan/info/ .
+.TP
+.B $trashcan/files/*
+This directories contains the files and directories that were trashed.
+When a file or directory is trashed, it is moved into this directory.
+Each file has a unique name equal to its original name plus a unique number.
+.TP
+.B $trashcan/info/*
+This directory contains an \(lqinformation file\(rq for every file and
+directory in
+.BR $TRASH/files/ .
+Each information file has exactly the same name as the corresponding
+file or directory in
+.BR $TRASH/files/ ,
+plus the extension \(lqtrashinfo\(rq.
+For example, if a file in 
+.B $TRASH/files/
+is named
+.BR foo.bar ,
+the corresponding file in
+.B $TRASH/info/
+is named
+.B
+.BR foo.bar.trashinfo .
+Each information file contains the original name of the trashed file
+and the time it was trashed.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B >0
+Error occurred.
+.SH SEE ALSO
+.IR untrash (1),
+.IR rm (1)

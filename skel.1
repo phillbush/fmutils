@@ -1,0 +1,37 @@
+.TH SKEL 1
+.SH NAME
+skel \- create a template file in the current directory
+.SH SYNOPSIS
+.B skel
+.RI [ template " [" name ]]
+.SH DESCRIPTION
+.B skel
+copies the specified skeleton file from the skeleton directory into the current directory.
+A skeleton file is a template file containing a sample of a file format.
+.PP
+If
+.B skel
+receives no argument, it only lists the available skeleton files.
+If it receives argument, copies the
+.I template
+skeleton file into the current directory by the name
+.IR name .
+.SH ENVIRONMENT
+The following environment variables affect the execution of
+.B skel
+.TP
+.B SKEL
+Sets the directory containing skeleton files.  If not specified, use
+.B ~/skel
+by default.
+.SH FILES
+.TP
+.B $SKEL/*
+Skeleton files.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B >0
+Error occurred.

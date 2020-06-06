@@ -1,0 +1,74 @@
+#!/bin/sh
+# trash: move files to trash
+# this file in public domain
+
+usage() {
+	echo "usage: trash file..." >&2
+	exit 1
+}
+
+# get trash directory to move file $1 into
+gettrash() {
+	mountfile="$(df "$1" | awk 'END {print $NF}')"
+	mounthome="$(df "$HOME" | awk 'END {print $NF}')"
+
+	if [ "$mountfile" != "$mounthome" ]
+	then
+		echo "$mountfile/.Trash-$UID"
+	else
+		echo ${TRASH:-$HOME/trash}
+	fi
+
+}
+
+# delete file with full path $1 into trash directory $2
+trash() {
+	basename=$(basename "$1")
+	body=${basename%.*}
+	ext=${basename##$body}
+
+	i=""
+	p=""
+	while [ -e "$2/files/$body$p$i$ext" ]
+	do
+		p="_"
+		if [ -z "$i" ]
+		then
+			i=1
+		else
+			i=$((i + 1))
+		fi
+	done
+
+	cat > "$2/info/$body$p$i$ext.trashinfo" <<END
+[Trash Info]
+Path=$1
+DeletionDate=$(date +"%FT%H:%M:%S")
+END
+
+	mv "$1" "$2/files/$body$p$i$ext"
+}
+
+[ $# -eq 0 ] && usage
+
+for f in "$@"; do
+
+	[ ! -e $f ] && echo "trash: $f: no such file or directory" >&2 && exit 1
+
+	trashdir="$(gettrash "$f")"
+	filename="$(readlink -f "$f")"
+
+	# create trash directory
+	if ! mkdir -p "$trashdir/files" "$trashdir/info"
+	then
+		echo "trash: unable to create $trashdir"
+		exit 1
+	elif [ "$(ls -ld "$trashdir" | awk 'END {print $1}')" != 'drwx------' ]
+	then
+		chmod 700 "$trashdir"
+	fi
+
+	trash "$filename" "$trashdir"
+done
+
+exit 0

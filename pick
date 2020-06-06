@@ -1,0 +1,75 @@
+#!/bin/sh
+# pick: select arguments
+# this file in public domain
+
+quoting_style="${QUOTING_STYLE:literal}"
+delimiter='
+'
+IFS='
+'
+
+usage() {
+	echo "usage: pick [-bnq] arg..." >&2
+	exit 1
+}
+
+pick() {
+	# print prompt to terminal and read response from terminal
+	printf "%s? " "$i" >/dev/tty
+	read response </dev/tty
+
+	case "$response" in
+	y*|s*)
+		if [ "$quoting_style" = "escape" ]
+		then
+			printf "%s" "$i" | sed "s/\\([ 	]\\)/\\\\\\1/g; s/'/\\\\'/g"
+		elif [ "$quoting_style" = "shell" ]
+		then
+			printf "'"
+			printf "%s" "$i" | sed "s/'/'\\\\''/g"
+			printf "'"
+		else
+			printf "%s" "$i" | sed "s/'/\\\\'/g"
+		fi
+		printf "%s" "$delimiter"
+		;;
+	q*)
+		exit 1
+		;;
+	esac
+}
+
+while getopts 'bqn' c
+do
+	case "$c" in
+	b)
+		quoting_style="escape"
+		;;
+	q)
+		quoting_style="shell"
+		;;
+	n)
+		delimiter=" "
+		;;
+	*)
+		usage
+		;;
+	esac
+done
+shift $((OPTIND -1))
+
+if [ $# -eq 0 ]
+then
+	usage
+elif [ $# -eq 1 -a $1 = '-' ]
+then
+	while read -r i
+	do
+		pick "$i"
+	done
+else
+	for i
+	do
+		pick "$i"
+	done
+fi

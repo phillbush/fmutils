@@ -1,0 +1,124 @@
+.TH PICK 1
+.SH NAME
+pick \- interactivelly select arguments
+.SH SYNOPSIS
+.B pick
+.IR arg ...
+.SH DESCRIPTION
+.B pick
+prints each option in turn and asks the user for a response;
+if the response is
+.BR y ,
+the option is printed to standard output.
+If
+.B pick
+receives
+.B \-
+(an hyphen)
+as only argument, each option is a line from the standard input;
+otherwise, each option is a different argument.
+.PP
+The options are as follows:
+.TP
+.B \-b
+Escape whitespace by printing a backslash before it.
+This option overrides the
+.B QUOTING_STYLE
+environment variable.
+This option is incompatible with
+.BR \-q .
+.TP
+.B \-q
+Quote each option with single quotes just as shell quoting.
+This option overrides the
+.B QUOTING_STYLE
+environment variable.
+This option is incompatible with
+.BR \-b .
+.TP
+.B \-n
+Do not separate options by newline, separate by a single space, instead.
+.SH ENVIRONMENT
+The following environment variables affect the execution of
+.B prog
+.TP
+.B QUOTING_STYLE
+If set to
+.BR \(dqescape\(dq ,
+.B pick
+behaves as if the option
+.B -b
+is set, thus whitespaces are escaped with backslashes.
+If set to
+.BR \(dqshell\(dq ,
+.B pick
+behaves as if the option
+.B -q
+is set, thus options are quoted between single quotes as in shell quoting.
+If set to
+.BR \(dqliteral\(dq ,
+options are output as is.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B >0
+Error occurred.
+.SH EXAMPLES
+.B pick
+can be used to interactivelly remove files with
+.IR rm (1).
+This example is equivalent to
+.BR "rm \-i" ,
+but can be used with other commands that, unlike
+.IR rm (1),
+does not provide a
+.B \-i
+option.
+.IP
+.EX
+$ rm `pick *`
+.EE
+.PP
+The following example is equivalent to the previous one, but uses the
+standard input fed by the
+.IR ls (1)
+utility.
+.IP
+.EX
+$ rm `ls | pick -`
+.EE
+.PP
+The previous examples rely on the condition that each filename does not contain space in it.
+If a file contains space, it would be considered as a field separator.
+One option to avoid this is using
+.IR xargs (1)
+with the option
+.B -d '\\\\n'
+to consider only the newline output by
+.B pick
+as the field separator.
+.IP
+.EX
+$ pick * | xargs -d '\\n' rm
+.EE
+.PP
+Another option is to use a quoting option, such as
+.B -q
+on
+.BR pick ,
+and pipe it into
+.IR xargs (1):
+.IP
+.EX
+$ pick -q * | xargs rm
+.EE
+.SH SEE ALSO
+.IR xargs (1)
+.SH HISTORY
+An
+.B pick
+utility appeared as an exemple in the book
+.IR "The UNIX Programming Environment" ,
+by Brian W' Kernighan and Rob Pike.
