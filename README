@@ -9,7 +9,7 @@ The scripts are the following.
 • preview:    Generate text preview of a file to be used by lf(1) or ranger(1).
 • skel:       Create a template file in the current directory.
 • trash:      Move files to trash following XDG trash specification.
-• untrash:    Remove files fropoint to m trash following XDG trash specification.
+• untrash:    Remove files from trash following XDG trash specification.
 • unpack:     Unarchive archived files (.zip, .rar, .tar.gz, etc).
 • xopen:      Open file or URL with an application.
 
