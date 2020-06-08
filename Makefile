@@ -15,6 +15,7 @@ install:
 	install -D -m 644 pick.1 ${DESTDIR}${MANPREFIX}/man1/pick.1
 	install -D -m 644 preview.1 ${DESTDIR}${MANPREFIX}/man1/preview.1
 	install -D -m 644 skel.1 ${DESTDIR}${MANPREFIX}/man1/skel.1
+	install -D -m 644 trash.1 ${DESTDIR}${MANPREFIX}/man1/trash.1
 	install -D -m 644 untrash.1 ${DESTDIR}${MANPREFIX}/man1/untrash.1
 	install -D -m 644 xopen.1 ${DESTDIR}${MANPREFIX}/man1/xopen.1
 
@@ -30,6 +31,7 @@ uninstall:
 	rm -f ${DESTDIR}${MANPREFIX}/man1/pick.1
 	rm -f ${DESTDIR}${MANPREFIX}/man1/preview.1
 	rm -f ${DESTDIR}${MANPREFIX}/man1/skel.1
+	rm -f ${DESTDIR}${MANPREFIX}/man1/trash.1
 	rm -f ${DESTDIR}${MANPREFIX}/man1/untrash.1
 	rm -f ${DESTDIR}${MANPREFIX}/man1/xopen.1
 
