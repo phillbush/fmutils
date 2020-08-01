@@ -23,25 +23,32 @@ unpack()
 		echo "unpack: $2: not a directory"
 		exit 1
 	fi
-
-	case "$(file -ib "$1" | cut -d';' -f1)" in
-	application/gzip|application/x-gzip)
+	
+	
+	case "$(file -ib "$1" | cut -d';' -f1 | cut -d'/' -f2)" in
+	gzip|x-gzip)
 		tar xzvf "$1" -C "$2" >/dev/null
+		[[ $? != 0 ]] && echo "Package can not be extracted, try to install 'tar'" 
 		;;
-	application/bzip2|application/x-bzip2)
+	bzip2|x-bzip2)
 		tar xjvf "$1" -C "$2" >/dev/null
+		[[ $? != 0 ]] && echo "Package can not be extracted, try to install 'tar'" 
 		;;
-	application/tar|application/x-tar)
+	tar|x-tar)
 		tar xvf "$1" -C "$2" >/dev/null
+		[[ $? != 0 ]] && echo "Package can not be extracted, try to install 'tar'" 
 		;;
-	application/zip)
+	zip)
 		unzip -d "$2" "$1" >/dev/null
+		[[ $? != 0 ]] && echo "Package can not be extracted, try to install 'unzip'" 
 		;;
-	application/x-rar)
+	x-rar)
 		unrar x "$1" "$2" >/dev/null
+		[[ $? != 0 ]] && echo "Package can not be extracted, try to install 'unrar'" 
 		;;
-	application/x-7z-compressed)
-		7z x -o"$2" "$1" >/dev/null
+	x-7z-compressed)
+		7z x -o "$2" "$1" >/dev/null
+		[[ $? != 0 ]] && echo "Package can not be extracted, try to install '7-zip'" 
 		;;
 	*)
 		echo "unpack: $1: not an archive file"
