@@ -11,7 +11,6 @@ The scripts are the following.
 • trash:      Move files to trash following XDG trash specification.
 • untrash:    Remove files from trash following XDG trash specification.
 • unpack:     Unarchive archived files (.zip, .rar, .tar.gz, etc).
-• xopen:      Open file or URL with an application.
 
 
 § Installation
@@ -61,10 +60,6 @@ supposed to have the path of the trash)
 
 Extract the content of file.zip into your home directory.
 	$ unpack file.zip $HOME
-
-Open a file with the default application specified, as specified in the
-file whose path is in the environment variable $MIMEFILE.
-	$ xopen file.jpg
 
 
 § License
