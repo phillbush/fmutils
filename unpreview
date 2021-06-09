@@ -1,0 +1,32 @@
+#!/bin/sh
+# this file in public domain
+
+COLUMNS=$2
+LINES=$3
+X=$4
+Y=$5
+
+PATH="$PATH:/usr/local/lib/w3m/"
+PATH="$PATH:/usr/local/libexec/w3m/"
+PATH="$PATH:/usr/local/lib64/w3m/"
+PATH="$PATH:/usr/local/libexec64/w3m/"
+PATH="$PATH:/usr/lib/w3m/"
+PATH="$PATH:/usr/libexec/w3m/"
+PATH="$PATH:/usr/lib64/w3m/"
+PATH="$PATH:/usr/libexec64/w3m/"
+
+tmp="$(xdotool getactivewindow getwindowgeometry --shell | sed -n '/WIDTH/{s/.*=//; p;}; /HEIGHT/{s/.*=//; p;}' | tr '\n' ' ' )"
+term_width="$(echo $tmp | cut -d' ' -f1)"
+term_height="$(echo $tmp | cut -d' ' -f2)"
+tmp="$(stty -f /dev/tty size)"
+term_lines="$(echo $tmp | cut -d' ' -f1)"
+term_columns="$(echo $tmp | cut -d' ' -f2)"
+
+fontw=$(( term_width / term_columns ))
+fonth=$(( term_height / term_lines ))
+width=$(( fontw * ( COLUMNS - 1 ) + 2 ))
+height=$(( fonth * ( LINES - 1 ) + 2 ))
+x=$(( fontw * X ))
+y=$(( fonth * Y ))
+
+printf '6;%s;%s;%s;%s;\n3;\n' "$x" "$y" "$width" "$height" | w3mimgdisplay
