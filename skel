@@ -12,7 +12,7 @@ usage() {
 }
 
 listskel() {
-	ls $SKEL
+	ls -1 $SKEL
 	return 0
 }
 

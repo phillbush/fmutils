@@ -47,8 +47,12 @@ unpack()
 		[[ $? != 0 ]] && echo "Package can not be extracted, try to install 'unrar'" 
 		;;
 	x-7z-compressed)
-		7z x -o "$2" "$1" >/dev/null
+		7z x -o"$2" "$1" >/dev/null
 		[[ $? != 0 ]] && echo "Package can not be extracted, try to install '7-zip'" 
+		;;
+	x-xz)
+		xzcat "$1" | tar xvf - -C "$2" >/dev/null
+		[[ $? != 0 ]] && echo "Package can not be extracted, try to install 'xz'" 
 		;;
 	*)
 		echo "unpack: $1: not an archive file"

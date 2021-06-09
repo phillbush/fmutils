@@ -1,16 +1,13 @@
 #!/bin/sh
-# preview: print text preview of file
 # this file in public domain
 
-set -C -f -u 
+set -C -f -u
 
-LINES=${2:-20}
-COLUMNS=${3:-72}
-IFS='
-'
+previewdir="${CACHEDIR:-${XDG_CACHE_HOME:-"$HOME/.cache"}}/preview"
 
+# show usage
 usage() {
-	echo "usage: preview filename" >&2
+	echo "usage: preview filename [w h x y]" >&2
 	exit 1
 }
 
@@ -24,30 +21,70 @@ getfilemime() {
 	file -ib "$@" | cut -d';' -f1
 }
 
-# center first n lines
-center() {
-	n=0;
-	while read -r line; do
-		if [ $n -lt "$1" ]
-		then
-			printf "%*s\n" $(( (${#line} + COLUMNS) / 2)) "$line"
-			n=$((n+1))
-		else
-			echo $line
-		fi
-	done
+# get cached file
+getcache() {
+	mkdir -p "$previewdir"
+	printf '%s/%s' "$previewdir" "$(stat "$(readlink -f "$1")" | sha256 | awk '{print $1}')"
+}
+
+# preview image
+img() {
+	PATH="$PATH:/usr/local/lib/w3m/"
+	PATH="$PATH:/usr/local/libexec/w3m/"
+	PATH="$PATH:/usr/local/lib64/w3m/"
+	PATH="$PATH:/usr/local/libexec64/w3m/"
+	PATH="$PATH:/usr/lib/w3m/"
+	PATH="$PATH:/usr/libexec/w3m/"
+	PATH="$PATH:/usr/lib64/w3m/"
+	PATH="$PATH:/usr/libexec64/w3m/"
+
+	tmp="$(xdotool getactivewindow getwindowgeometry --shell | sed -n '/WIDTH/{s/.*=//; p;}; /HEIGHT/{s/.*=//; p;}' | tr '\n' ' ' )"
+	term_width="$(echo $tmp | cut -d' ' -f1)"
+	term_height="$(echo $tmp | cut -d' ' -f2)"
+	tmp="$(stty -f /dev/tty size)"
+	term_lines="$(echo $tmp | cut -d' ' -f1)"
+	term_columns="$(echo $tmp | cut -d' ' -f2)"
+	tmp="$(echo "5;$1" | w3mimgdisplay)"
+	img_width="$(echo $tmp | cut -d' ' -f1)"
+	img_height="$(echo $tmp | cut -d' ' -f2)"
+
+	fontw=$(( term_width / term_columns ))
+	fonth=$(( term_height / term_lines ))
+	max_width=$(( fontw * (COLUMNS - 1) ))
+	max_height=$(( fonth * (LINES - 1) ))
+	img_x=$(( fontw * X ))
+	img_y=$(( fonth * Y ))
+	if [ "$img_width" -gt "$max_width" ]
+	then
+		img_height=$(( img_height * max_width / img_width ))
+		img_width=$max_width
+	fi
+	if [ "$img_height" -gt "$max_height" ]
+	then
+		img_width=$(( img_width * max_height / img_height ))
+		img_height=$max_height
+	fi
+
+	printf '6;%s;%s;%s;%s;\n0;1;%s;%s;%s;%s;;;;;%s\n4;\n3;\n' \
+	"$img_x" "$img_y" "$img_width" "$img_height" \
+	"$img_x" "$img_y" "$img_width" "$img_height" "$1" | w3mimgdisplay
 }
 
 # preview file and exit
 preview() {
 	case "$2" in
+	"")
+		echo '----- File Type Classification -----'
+		file -b "$1"
+		exit
+		;;
 	a|ace|alz|arc|arj|bz|bz2|cab|cpio|deb|gz|jar|lha|lz|lzh|lzma|lzo|\
 	rpm|rz|t7z|tar|tbz|tbz2|tgz|tlz|txz|tZ|tzo|war|xpi|xz|Z|zip|7z)
 		bsdtar -tf "$1"
 		exit
 		;;
 	pdf)
-		pdftotext -layout -l 10 -- "$1" - | center 4
+		pdftotext -layout -- "$1" -
 		exit
 		;;
 	htm|html|xhtml)
@@ -63,23 +100,56 @@ preview() {
 		exit
 		;;
 	image/*)
-		exiftool "$1" 
+		if [ $IMG -eq 1 ]
+		then
+			img "$1"
+			exit 1
+		else
+			exiftool "$1"
+			exit
+		fi
+		;;
+	video/*)
+		if [ $IMG -eq 1 ]
+		then
+			cache="$(getcache "$1")"
+			[ -f "$cache" ] || ffmpegthumbnailer -i "$1" -o "$cache" -s 0
+			img "$cache"
+			exit 1
+		else
+			mediainfo "$1"
+			exit
+		fi
 		exit
 		;;
-	video/*|audio/*|application/octet-stream)
+	audio/*|application/octet-stream)
 		mediainfo "$1"
 		exit
 		;;
 	esac
 }
 
-[ "$#" -eq 0 ] && usage
+case "$#" in
+1)
+	COLUMNS=72
+	LINES=20
+	X=0
+	Y=0
+	IMG=0
+	;;
+5)
+	COLUMNS=$2
+	LINES=$3
+	X=$4
+	Y=$5
+	IMG=1
+	;;
+*)
+	usage
+	;;
+esac
 
-extension="$(getextension $1)"
-mimetype="$(getfilemime $1)"
-
-preview "$1" "$extension"    # try first to preview by file extension
-preview "$1" "$mimetype"     # then try to preview by mimetype
-
-echo '----- File Type Classification -----'
-file -b "$1"
+[ -p "$1" ] && exit 1
+preview "$1" "$(getextension "$1")"       # try first to preview by file extension
+preview "$1" "$(getfilemime "$1")"        # then try to preview by mimetype
+preview "$1"                            # then just print its file type

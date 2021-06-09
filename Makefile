@@ -11,6 +11,7 @@ install:
 	install -D -m 755 trash ${DESTDIR}${PREFIX}/bin/trash
 	install -D -m 755 untrash ${DESTDIR}${PREFIX}/bin/untrash
 	install -D -m 755 unpack ${DESTDIR}${PREFIX}/bin/unpack
+	install -D -m 755 unpreview ${DESTDIR}${PREFIX}/bin/unpreview
 	install -D -m 644 bulkrename.1 ${DESTDIR}${MANPREFIX}/man1/bulkrename.1
 	install -D -m 644 pick.1 ${DESTDIR}${MANPREFIX}/man1/pick.1
 	install -D -m 644 preview.1 ${DESTDIR}${MANPREFIX}/man1/preview.1
@@ -27,6 +28,7 @@ uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/trash
 	rm -f ${DESTDIR}${PREFIX}/bin/untrash
 	rm -f ${DESTDIR}${PREFIX}/bin/unpack
+	rm -f ${DESTDIR}${PREFIX}/bin/unpreview
 	rm -f ${DESTDIR}${MANPREFIX}/man1/bulkrename.1
 	rm -f ${DESTDIR}${MANPREFIX}/man1/pick.1
 	rm -f ${DESTDIR}${MANPREFIX}/man1/preview.1
