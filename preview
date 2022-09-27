@@ -1,9 +1,7 @@
 #!/bin/sh
 # this file in public domain
 
-set -C -f -u
-
-previewdir="${CACHEDIR:-${XDG_CACHE_HOME:-"$HOME/.cache"}}/preview"
+previewdir="${CACHEDIR:-"${XDG_CACHE_HOME:-"$HOME/.cache"}"}/preview"
 
 # show usage
 usage() {
@@ -24,7 +22,7 @@ getfilemime() {
 # get cached file
 getcache() {
 	mkdir -p "$previewdir"
-	printf '%s/%s' "$previewdir" "$(stat "$(readlink -f "$1")" | sha256 | awk '{print $1}')"
+	printf "%s/%s" "$previewdir" "$(stat "$1" | sha256)"
 }
 
 # preview image
@@ -37,37 +35,50 @@ img() {
 	PATH="$PATH:/usr/libexec/w3m/"
 	PATH="$PATH:/usr/lib64/w3m/"
 	PATH="$PATH:/usr/libexec64/w3m/"
+	filename="$1"
 
-	tmp="$(xdotool getactivewindow getwindowgeometry --shell | sed -n '/WIDTH/{s/.*=//; p;}; /HEIGHT/{s/.*=//; p;}' | tr '\n' ' ' )"
-	term_width="$(echo $tmp | cut -d' ' -f1)"
-	term_height="$(echo $tmp | cut -d' ' -f2)"
-	tmp="$(stty -f /dev/tty size)"
-	term_lines="$(echo $tmp | cut -d' ' -f1)"
-	term_columns="$(echo $tmp | cut -d' ' -f2)"
-	tmp="$(echo "5;$1" | w3mimgdisplay)"
-	img_width="$(echo $tmp | cut -d' ' -f1)"
-	img_height="$(echo $tmp | cut -d' ' -f2)"
+	{
+		# get information about terminal X11 window
+		xdotool getwindowgeometry --shell "$WINDOWID" 2>/dev/null | cut -d= -f2
 
-	fontw=$(( term_width / term_columns ))
-	fonth=$(( term_height / term_lines ))
-	max_width=$(( fontw * (COLUMNS - 1) ))
-	max_height=$(( fonth * (LINES - 1) ))
-	img_x=$(( fontw * X ))
-	img_y=$(( fonth * Y ))
-	if [ "$img_width" -gt "$max_width" ]
-	then
-		img_height=$(( img_height * max_width / img_width ))
-		img_width=$max_width
-	fi
-	if [ "$img_height" -gt "$max_height" ]
-	then
-		img_width=$(( img_width * max_height / img_height ))
-		img_height=$max_height
-	fi
+		# get information about terminal character column and row
+		stty -f /dev/tty size
 
-	printf '6;%s;%s;%s;%s;\n0;1;%s;%s;%s;%s;;;;;%s\n4;\n3;\n' \
-	"$img_x" "$img_y" "$img_width" "$img_height" \
-	"$img_x" "$img_y" "$img_width" "$img_height" "$1" | w3mimgdisplay
+		# get information about image
+		printf "5;%s\n" "$filename" | w3mimgdisplay
+	} | tr '\n' ' ' | {
+		read -r WIN_ID WIN_X WIN_Y WIN_W WIN_H SCREEN LINES COLUMNS IMG_W IMG_H
+
+		# do nothing on dummy variables, just for shellcheck to be happy
+		: "$WIN_ID" "$WIN_X" "$WIN_Y" "$SCREEN"
+
+		# compute stuff
+		FONT_W="$(( WIN_W / COLUMNS ))"
+		FONT_H="$(( WIN_H / LINES ))"
+		MAX_W="$(( FONT_W * (W - 2) ))"
+		MAX_H="$(( FONT_H * (H - 2) ))"
+		FINAL_X="$(( FONT_W * (X + 1) ))"
+		FINAL_Y="$(( FONT_H * (Y + 1) ))"
+		FINAL_W="$IMG_W"
+		FINAL_H="$IMG_H"
+
+		# resize image
+		if test "$FINAL_H" -gt "$MAX_H"
+		then
+			FINAL_W="$(( FINAL_W * MAX_H / FINAL_H ))"
+			FINAL_H="$MAX_H"
+		fi
+		if test "$FINAL_W" -gt "$MAX_W"
+		then
+			FINAL_H="$(( FINAL_H * MAX_W / FINAL_W ))"
+			FINAL_W="$MAX_W"
+		fi
+
+		# perform w3m(1) black magic
+		printf '6;%s;%s;%s;%s;\n0;1;%s;%s;%s;%s;;;;;%s\n4;\n3;\n' \
+		"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" \
+		"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" "$filename" | w3mimgdisplay
+	}
 }
 
 # preview file and exit
@@ -92,15 +103,27 @@ preview() {
 		exit
 		;;
 	1|2|3|4|5|6|7|8|9)
-		MANWIDTH="$COLUMNS" man -T ascii "$(readlink -f $1)" | sed 's/.//g'
+		MANWIDTH="$W" man -Tutf8 -l "$1" | sed 's/.//g'
 		exit
 		;;
 	text/*|*/xml|application/x-shellscript)
 		cat "$1"
 		exit
 		;;
+	image/svg+xml)
+		if test "$IMG" -eq 1
+		then
+			cache="$(getcache "$1")"
+			[ -f "$cache" ] || rsvg-convert "$1" >"$cache"
+			img "$cache"
+			exit 1
+		else
+			cat "$1"
+			exit
+		fi
+		;;
 	image/*)
-		if [ $IMG -eq 1 ]
+		if test "$IMG" -eq 1
 		then
 			img "$1"
 			exit 1
@@ -110,7 +133,7 @@ preview() {
 		fi
 		;;
 	video/*)
-		if [ $IMG -eq 1 ]
+		if test "$IMG" -eq 1
 		then
 			cache="$(getcache "$1")"
 			[ -f "$cache" ] || ffmpegthumbnailer -i "$1" -o "$cache" -s 0
@@ -131,15 +154,15 @@ preview() {
 
 case "$#" in
 1)
-	COLUMNS=72
-	LINES=20
+	W=72
+	H=20
 	X=0
 	Y=0
 	IMG=0
 	;;
 5)
-	COLUMNS=$2
-	LINES=$3
+	W=$2
+	H=$3
 	X=$4
 	Y=$5
 	IMG=1
@@ -149,7 +172,7 @@ case "$#" in
 	;;
 esac
 
-[ -p "$1" ] && exit 1
-preview "$1" "$(getextension "$1")"       # try first to preview by file extension
-preview "$1" "$(getfilemime "$1")"        # then try to preview by mimetype
+test -p "$1" && exit 1
+preview "$1" "$(getextension "$1")"     # try first to preview by file extension
+preview "$1" "$(getfilemime "$1")"      # then try to preview by mimetype
 preview "$1"                            # then just print its file type

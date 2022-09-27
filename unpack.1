@@ -1,42 +1,39 @@
-.TH unpack 1
-.SH NAME
-unpack \- unarchive archive files
-.SH SYNOPSIS
-.B unpack
-.I file
-.RI [ directory ]
-.SH DESCRIPTION
-.B unpack
+.Dd September 26, 2022
+.Dt UNPACK 1
+.Os
+.Sh NAME
+.Nm unpack
+.Nd unarchive archive files
+.Sh SYNOPSIS
+.Nm
+.Ar file
+.Op Ar directory
+.Sh DESCRIPTION
+.Nm
 extracts the contents of an archive file such as .zip or .tar.gz in the
 current directory or in the specified directory
 .PP
 The mimetypes of the supported archive file formats are the following:
-.IP
+.Bl -bullet -compact
+.It
 application/gzip (.tar.gz)
-.IP
+.It
 application/x-tar (.tar)
-.IP
+.It
 application/zip (.zip)
-.IP
+.It
 application/vnd.rar (.rar)
-.IP
+.It
 application/x-7z-compressed (.7z)
-.SH EXIT STATUS
-.TP
-.B 0
-Success.
-.TP
-.B >0
-Error occurred.
-.SH EXAMPLES
-Extract the content of file.zip into the home directory.
-.IP
-.EX
+.El
+.Sh EXAMPLES
+Extract the content of file.zip into the home directory:
+.Bd -literal -offset indent
 $ unpack file.zip $HOME
-.EE
-.SH SEE ALSO
-.IR tar (1),
-.IR gzip (1),
-.IR unzip (1),
-.IR unrar (1),
-.IR 7z (1)
+.Ed
+.Sh SEE ALSO
+.Xr tar 1 ,
+.Xr gzip 1 ,
+.Xr unzip 1 ,
+.Xr unrar 1 ,
+.Xr 7z 1

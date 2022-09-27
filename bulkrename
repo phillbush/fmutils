@@ -2,101 +2,134 @@
 # bulkrename: bulk rename files using $EDITOR and temporary files
 # this file in public domain
 
-set -f -e -u
+EDITOR="${EDITOR:-"${VISUAL:-"vi"}"}"
 
-EDITOR="${EDITOR:-${VISUAL:-vi}}"
-
-usage()
-{
-	echo "usage: bulkrename [file...]" >&2
+# create temporary files
+if ! tmpfile="$(mktemp)"
+then
+	printf "bulkrename: could not make temporary file\n" >&2
 	exit 1
-}
+fi
+trap 'rm -f "$tmpfile"' EXIT
 
-# quote and escape filename for moving
-quote()
-{
-	echo "$1" | sed "s/'/'\\\\''/g; s/^/'/; s/\$/'/"
-}
-
-# populate the files $old and $new with filenames, one per line
-populatefiles()
-{
-	if [ $# -eq 0 ]
-	then                            # run on stdin
-		cat | tee "$old" > "$new"
-	else                            # run on arguments
-		for i
-		do
-			printf "%s\n" "$i" >> "$old"
-			printf "%s\n" "$i" >> "$new"
-		done
-	fi
-}
-
-# edit the filenames in $new and test if they are valid
-editfile()
-{
-	if [ "$(wc -l <"$old")" -ne "$(sort -u "$old" | wc -l)" ]
-	then
-		echo "bulkrename: repeated filenames to be renamed" >&2
-		exit 1
-	fi
-
-	"$EDITOR" "$new" </dev/tty
-
-	if [ $(wc -l <"$new") -ne $(wc -l <"$old") ]
-	then
-		echo "bulkrename: number of filenames not equal to number of files" >&2
-		exit 1
-	fi
-
-	if [ "$(wc -l <"$new")" -ne "$(sort -u "$new" | wc -l)" ]
-	then
-		echo "bulkrename: repeated target filenames" >&2
-		exit 1
-	fi
-}
-
-# create $cmd file
-createcmd()
-{
-	cat /dev/null >"$cmd"
-	while read -r from <&3 && read -r to <&4
+# if no argument is passed, fill $@ with lines from stdin
+if [ $# -eq 0 ]
+then                            # run on stdin
+	while read -r line
 	do
-		if [ "$from" != "$to" ]
-		then
-			from=$(quote "$from")
-			to=$(quote "$to")
-			printf "mv %s\t%s\n" "$from" "$to" >> "$cmd"
-		fi
-	done 3<"$old" 4<"$new"
-}
+		set -- "$@" "$line"
+	done
+fi
 
-# remove temporary files
-cleanup()
-{
-	rm -f "$old" "$new" "$cmd"
-}
-
-while getopts 'h' c
+# check if arguments are valid and write them to tmpfile
+nargs="$#"
+for arg
 do
-	case "$c" in
-	h|*)
-		usage
+	case "$arg" in
+	("")
+		printf "bulkrename: empty argument\n" >&2
+		exit 1
+		;;
+	(*[[:cntrl:]]*)
+		printf "bulkrename: control characters in filenames are not supported\n" >&2
+		exit 1
+		;;
+	([[:space:]]*|*[[:space:]])
+		printf "bulkrename: filenames beginning or ending in space is not supported\n" >&2
+		exit 1
+		;;
+	esac
+	if ! test -e "$arg"
+	then
+		printf "bulkrename: %s: file does not exist\n" "$arg" >&2
+		exit 1
+	fi
+	printf "%s\n" "$arg" >> "$tmpfile"
+done
+
+# call editor on tmpfile
+"$EDITOR" -- "$tmpfile" </dev/tty
+
+# read new filenames from edited tmpfile
+while read -r target && test "$nargs" -gt 0
+do
+	source="$1"
+
+	# for each target filename read from the file there is a
+	# corresponding entry in $@.  We read filenames from the
+	# file up to $nargs, and append $@ with commands:
+	# "rm" "file"           (remove file)
+	# "mv0" "from" "to"     (move file on the next loop)
+	# "mv1" "from" "to"     (move file on the last loop)
+	if test -z "$target"
+	then
+		# line asks to remove file
+		set -- "$@" "rm" "$source"
+	elif test "$target" = "$source"
+	then
+		# line does nothing
+		:
+	elif i=0 && for arg ; do test "$((i++))" -lt "$nargs" && test "$target" = "$arg" && break ; done
+	then
+		# line renaming creates filename collision; get unique filename
+		unique="$source"
+		while test -e "$unique"
+		do
+			unique="$unique~"
+		done
+		set -- "$@" "mv0" "$source" "$unique"
+		set -- "$@" "mv1"  "$unique" "$target"
+	else
+		# line is a renaming without collision
+		set -- "$@" "mv0" "$source" "$target"
+	fi
+
+	# we're done with this source file
+	shift
+	nargs="$((nargs - 1))"
+done <"$tmpfile"
+shift "$nargs"
+
+# perform the commands specified in the argument list
+while test "$#" -gt 0
+do
+	case "$1" in
+	("rm")
+		rm -- "$2"
+		printf "rm %s\n" "$2"
+		shift 2
+		;;
+	("mv0")
+		mv -- "$2" "$3"
+		printf "%s -> %s\n" "$2" "$3"
+		shift 3
+		;;
+	("mv1")
+		set -- "$@" "mv2" "$2" "$3"
+		shift 3
+		;;
+	("mv2")
+		break
+		;;
+	(*)
+		printf "bulkrename: unknown command %s\n" "$1" >&2
+		exit 1
 		;;
 	esac
 done
-shift $((OPTIND -1))
 
-old=$(mktemp)
-new=$(mktemp)
-cmd=$(mktemp)
-
-trap cleanup EXIT
-
-populatefiles "$@"
-editfile
-createcmd
-sh -x "$cmd"
-
-exit 0
+# perform the commands specified in the argument list (the final ones)
+while test "$#" -gt 0
+do
+	case "$1" in
+	("mv2")
+		mv -- "$2" "$3"
+		printf "%s -> %s\n" "$2" "$3"
+		shift 3
+		;;
+	(*)
+		printf "bulkrename: unknown command %s\n" "$1" >&2
+		exit 1
+		;;
+	esac
+done

@@ -1,10 +1,28 @@
 #!/bin/sh
 # this file in public domain
 
-COLUMNS=$2
-LINES=$3
-X=$4
-Y=$5
+usage() {
+	echo "usage: unpreview filename [w h x y]" >&2
+	exit 1
+}
+
+case "$#" in
+1)
+	W=72
+	H=20
+	X=0
+	Y=0
+	;;
+5)
+	W=$2
+	H=$3
+	X=$4
+	Y=$5
+	;;
+*)
+	usage
+	;;
+esac
 
 PATH="$PATH:/usr/local/lib/w3m/"
 PATH="$PATH:/usr/local/libexec/w3m/"
@@ -14,19 +32,46 @@ PATH="$PATH:/usr/lib/w3m/"
 PATH="$PATH:/usr/libexec/w3m/"
 PATH="$PATH:/usr/lib64/w3m/"
 PATH="$PATH:/usr/libexec64/w3m/"
+filename="$1"
 
-tmp="$(xdotool getactivewindow getwindowgeometry --shell | sed -n '/WIDTH/{s/.*=//; p;}; /HEIGHT/{s/.*=//; p;}' | tr '\n' ' ' )"
-term_width="$(echo $tmp | cut -d' ' -f1)"
-term_height="$(echo $tmp | cut -d' ' -f2)"
-tmp="$(stty -f /dev/tty size)"
-term_lines="$(echo $tmp | cut -d' ' -f1)"
-term_columns="$(echo $tmp | cut -d' ' -f2)"
+{
+	# get information about terminal X11 window
+	xdotool getwindowgeometry --shell "$WINDOWID" 2>/dev/null | cut -d= -f2
 
-fontw=$(( term_width / term_columns ))
-fonth=$(( term_height / term_lines ))
-width=$(( fontw * ( COLUMNS - 1 ) + 2 ))
-height=$(( fonth * ( LINES - 1 ) + 2 ))
-x=$(( fontw * X ))
-y=$(( fonth * Y ))
+	# get information about terminal character column and row
+	stty -f /dev/tty size
 
-printf '6;%s;%s;%s;%s;\n3;\n' "$x" "$y" "$width" "$height" | w3mimgdisplay
+	# get information about image
+	echo "5;$filename" | w3mimgdisplay
+} | tr '\n' ' ' | {
+	read -r WIN_ID WIN_X WIN_Y WIN_W WIN_H SCREEN LINES COLUMNS IMG_W IMG_H
+
+	# do nothing on dummy variables, just for shellcheck to be happy
+	: "$WIN_ID" "$WIN_X" "$WIN_Y" "$SCREEN"
+
+	# compute stuff
+	FONT_W="$(( WIN_W / COLUMNS ))"
+	FONT_H="$(( WIN_H / LINES ))"
+	MAX_W="$(( FONT_W * (W - 2) ))"
+	MAX_H="$(( FONT_H * (H - 2) ))"
+	FINAL_X="$(( FONT_W * (X + 1) ))"
+	FINAL_Y="$(( FONT_H * (Y + 1) ))"
+	FINAL_W="$IMG_W"
+	FINAL_H="$IMG_H"
+
+	# resize image
+	if test "$FINAL_H" -gt "$MAX_H"
+	then
+		FINAL_W="$(( FINAL_W * MAX_H / FINAL_H ))"
+		FINAL_H="$MAX_H"
+	fi
+	if test "$FINAL_W" -gt "$MAX_W"
+	then
+		FINAL_H="$(( FINAL_H * MAX_W / FINAL_W ))"
+		FINAL_W="$MAX_W"
+	fi
+
+	# perform w3m(1) black magic
+	printf '6;%s;%s;%s;%s;\n4;\n3;\n' \
+	"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" | w3mimgdisplay
+}

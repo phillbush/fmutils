@@ -1,29 +1,39 @@
-.TH preview 1
-.SH NAME
-preview \- generate text preview of file
-.SH SYNOPSIS
-.B preview
-.I file
-.RI [ height " [" width ]]
-.SH DESCRIPTION
-.B preview
+.Dd September 26, 2022
+.Dt PREVIEW 1
+.Os
+.Sh NAME
+.Nm preview ,
+.Nm unpreview
+.Nd generate preview of file, and clear the preview
+.Sh SYNOPSIS
+.Nm preview
+.Ar file
+.Op Ar width Ar height Ar x Ar y
+.Nm unpreview
+.Ar file
+.Op Ar width Ar height Ar x Ar y
+.Sh DESCRIPTION
+.Nm preview
 generates a text containing data and/or metadata of a file,
 this text is intended to be used as a preview for that file.
-The first argument is the file to be previewd,
-the second and third argument are the height and width (in characters) of the preview text.
-.PP
-.B preview
-is intended to be used by a file manager such as
-.IR lf (1)
+If the previewed file is a image, it draws the image on the terminal.
+.Pp
+.Nm unpreview
+clears the previewed text, if it is an image.
+.Pp
+The first argument is the file to be previewd.
+The second and third arguments are the height and width (in characters)
+where the preview text should be printed in the terminal.
+The fourth and fifth arguments are the line and column position
+where the preview text should be printed in the terminal.
+.Pp
+.Nm preview
+and
+.Nm unpreview
+are intended to be used by a file manager such as
+.Xr lf 1
 or
-.IR ranger (1).
-.SH EXIT STATUS
-.TP
-.B 0
-Success.
-.TP
-.B >0
-Error occurred.
-.SH SEE ALSO
-.IR lf (1),
-.IR ranger (1)
+.Xr ranger 1 .
+.Sh SEE ALSO
+.Xr lf 1 ,
+.Xr ranger 1

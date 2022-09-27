@@ -1,7 +1,7 @@
-                                FMUtils
+                                fmutils
 
-FMUtils are a set of POSIX scripts that implement some handy file
-management utilities.  Each script has its respective manual page.
+fmutils is a set of public domain POSIX scripts implementing some file
+management related utilities.  There are man pages for each script.
 
 The scripts are the following.
 • bulkrename: Bulk rename files with your text editor.
@@ -12,27 +12,12 @@ The scripts are the following.
 • untrash:    Remove files from trash following XDG trash specification.
 • unpack:     Unarchive archived files (.zip, .rar, .tar.gz, etc).
 
-
-§ Installation
-
-First, edit ./config.mk to match your local setup.
-
-Since FMUtils are just script, they do not need to be built.
-
-By default, FMUtils are installed into the /usr/local prefix.  Enter the
-following command to install FMUtils (if necessary as root).  This command
-installs the scripts into the ${PREFIX}/bin/ directory, and the manual
-pages into the ${MANPREFIX}/man1/ directory.
-
-	make install
-
-
 § Running FMUtils
 
 The following are examples of how to use FMUtils.
 
 Bulk rename all files in the current directory:
-	$ ls | bulkrename
+	$ bulkrename *
 
 Bulk rename all .jpg files in the ~/Downloads directory:
 	$ bulkrename ~/Downloads/*.jpg

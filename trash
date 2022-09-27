@@ -2,34 +2,51 @@
 # trash: move files to trash
 # this file in public domain
 
+trashdir="${TRASH:-"${XDG_DATA_HOME:-"$HOME/.local/share"}/Trash"}"
+retval=0
+IFS="/"
+
 usage() {
 	echo "usage: trash file..." >&2
 	exit 1
 }
 
-# get trash directory to move file $1 into
-gettrash() {
-	mountfile="$(df "$1" | awk 'END {print $NF}')"
-	mounthome="$(df "$HOME" | awk 'END {print $NF}')"
-
-	if [ "$mountfile" != "$mounthome" ]
+# make trash directory and set its mode
+mktrashdir() {
+	if ! mkdir -p -- "$trashdir/files" "$trashdir/info" >/dev/null 2>&1
 	then
-		echo "$mountfile/.Trash-$UID"
-	else
-		echo ${TRASH:-$HOME/trash}
+		echo "trash: unable to create $trashdir"
+		exit 1
 	fi
-
+	chmod 700 "$trashdir"
 }
 
-# delete file with full path $1 into trash directory $2
-trash() {
-	basename=$(basename "$1")
-	body=${basename%.*}
-	ext=${basename##$body}
+# canonicalize "//", "/./", and "/../" from $filename into $path
+setpath() {
+	path=""
+	case "$filename" in
+	([!/]*) filename="$PWD/$filename" ;;
+	esac
+	for segment in $filename
+	do
+		case "$segment" in
+		("")                         ;;
+		(".")                        ;;
+		("..") path="${path%/*}"     ;;
+		(*)    path="$path/$segment" ;;
+		esac
+	done
+}
 
+# break basename of $path into body and extension; set $newfile
+# to "body.ext" (or "body_N.ext", for a unique file)
+setnewfile() {
+	basename="${path##*/}"
+	body="${basename%.*}"
+	ext="${basename##"$body"}"
 	i=""
 	p=""
-	while [ -e "$2/files/$body$p$i$ext" ]
+	while test -e "$trashdir/files/$body$p$i$ext"
 	do
 		p="_"
 		if [ -z "$i" ]
@@ -39,36 +56,43 @@ trash() {
 			i=$((i + 1))
 		fi
 	done
+	newfile="$body$p$i$ext"
+}
 
-	cat > "$2/info/$body$p$i$ext.trashinfo" <<END
-[Trash Info]
-Path=$1
-DeletionDate=$(date +"%FT%H:%M:%S")
-END
+# make $trashdir/info/$newfile.trashinfo file containing the original
+# path of the trashed file and its date of deletion
+mktrashinfo() {
+	cat > "$trashdir/info/$newfile.trashinfo" <<-END
+		[Trash Info]
+		Path=$path
+		DeletionDate=$(date +"%FT%H:%M:%S")
+	END
+}
 
-	mv "$1" "$2/files/$body$p$i$ext"
+# move $path into $trashdir/files/$newfile
+movetotrash() {
+
+	if ! mv -- "$path" "$trashdir/files/$newfile" >/dev/null 2>&1
+	then
+		echo "trash: $arg: could not move file to trash" >&2
+		retval=1
+	fi
 }
 
 [ $# -eq 0 ] && usage
-
-for f in "$@"; do
-
-	[ ! -e $f ] && echo "trash: $f: no such file or directory" >&2 && exit 1
-
-	trashdir="$(gettrash "$f")"
-	filename="$(readlink -f "$f")"
-
-	# create trash directory
-	if ! mkdir -p "$trashdir/files" "$trashdir/info"
+mktrashdir
+for arg
+do
+	filename="$arg"
+	setpath
+	if test ! -e "$path"
 	then
-		echo "trash: unable to create $trashdir"
-		exit 1
-	elif [ "$(ls -ld "$trashdir" | awk 'END {print $1}')" != 'drwx------' ]
-	then
-		chmod 700 "$trashdir"
+		echo "trash: $arg: no such file or directory" >&2
+		retval=1
+	else
+		setnewfile
+		mktrashinfo
+		movetotrash
 	fi
-
-	trash "$filename" "$trashdir"
 done
-
-exit 0
+exit $retval

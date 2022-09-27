@@ -1,124 +1,135 @@
-.TH PICK 1
-.SH NAME
-pick \- interactivelly select arguments
-.SH SYNOPSIS
-.B pick
+.Dd September 23, 2022
+.Dt PICK 1
+.Os
+.Sh NAME
+.Nm pick
+.Nd interactivelly select arguments
+.Sh SYNOPSIS
+.Nm
+.Op Fl bnq
+.Op Fl d Ar delimiter
+.Op Ar arg ...
 .IR arg ...
-.SH DESCRIPTION
-.B pick
+.Sh DESCRIPTION
+.Nm
 prints each option in turn and asks the user for a response;
 if the response is
-.BR y ,
-the option is printed to standard output.
-If
-.B pick
+.Ic y ,
+the option is printed to standard output.  If
+>nm
 receives
-.B \-
+.Ic "-"
 (an hyphen)
 as only argument, each option is a line from the standard input;
 otherwise, each option is a different argument.
-.PP
+.Pp
 The options are as follows:
-.TP
-.B \-b
+.Bl -tag -width Ds
+.It Fl b
 Escape whitespace by printing a backslash before it.
 This option overrides the
-.B QUOTING_STYLE
+.Ev QUOTING_STYLE
 environment variable.
 This option is incompatible with
-.BR \-q .
-.TP
-.B \-q
+.Fl q .
+.It Fl d Ar delimiter
+Use
+.Ar delimiter
+as argument separator, rather than newline.
+This option is incompatible with
+.Fl n .
+.It Fl q
 Quote each option with single quotes just as shell quoting.
 This option overrides the
-.B QUOTING_STYLE
+.Ev QUOTING_STYLE
 environment variable.
 This option is incompatible with
-.BR \-b .
-.TP
-.B \-n
+.Fl b .
+.It Fl n
 Do not separate options by newline, separate by a single space, instead.
-.SH ENVIRONMENT
+This option is incompatible with
+.Fl d .
+.El
+.Pp
+.Sh ENVIRONMENT
 The following environment variables affect the execution of
-.B prog
-.TP
-.B QUOTING_STYLE
+.Nm
+.Bl -tag -width Ds
+.It Ev QUOTING_STYLE
 If set to
-.BR \(dqescape\(dq ,
-.B pick
+.Dq "escape" ,
+.Nm
 behaves as if the option
-.B -b
+.Fl b
 is set, thus whitespaces are escaped with backslashes.
 If set to
-.BR \(dqshell\(dq ,
-.B pick
+.Dq "shell" ,
+.Nm
 behaves as if the option
-.B -q
+.Fl q
 is set, thus options are quoted between single quotes as in shell quoting.
 If set to
-.BR \(dqliteral\(dq ,
+.Dq "literal" ,
 options are output as is.
-.SH EXIT STATUS
-.TP
-.B 0
-Success.
-.TP
-.B >0
-Error occurred.
-.SH EXAMPLES
-.B pick
+.Sh EXAMPLES
+.Nm
 can be used to interactivelly remove files with
-.IR rm (1).
-This example is equivalent to
-.BR "rm \-i" ,
+.Xr rm 1 .
+This example is equivalent to rm's
+.Fl i
+(interactive) option,
 but can be used with other commands that, unlike
-.IR rm (1),
+.Xr rm 1 ,
 does not provide a
-.B \-i
+.Fl i
 option.
-.IP
-.EX
+.Bd -literal -offset indent
 $ rm `pick *`
-.EE
-.PP
+.Ed
+.Pp
 The following example is equivalent to the previous one, but uses the
 standard input fed by the
-.IR ls (1)
+.Xr ls 1
 utility.
-.IP
-.EX
+.Bd -literal -offset indent
 $ rm `ls | pick -`
-.EE
-.PP
+.Ed
+.Pp
 The previous examples rely on the condition that each filename does not contain space in it.
 If a file contains space, it would be considered as a field separator.
 One option to avoid this is using
-.IR xargs (1)
+.Xr xargs 1
 with the option
-.B -d '\\\\n'
+.Fl d Cm "\en"
 to consider only the newline output by
-.B pick
+.Nm
 as the field separator.
-.IP
-.EX
+.Bd -literal -offset indent
 $ pick * | xargs -d '\\n' rm
-.EE
-.PP
+.Ed
+.Pp
 Another option is to use a quoting option, such as
-.B -q
+.Fl q
 on
-.BR pick ,
+.Nm ,
 and pipe it into
-.IR xargs (1):
-.IP
-.EX
+.Xr xargs 1 :
+.Bd -literal -offset indent
 $ pick -q * | xargs rm
-.EE
-.SH SEE ALSO
-.IR xargs (1)
-.SH HISTORY
+.Ed
+.Sh SEE ALSO
+.Xr xargs 1
+.Rs
+.%A Brian W. Kernighan
+.%A Rob Pike
+.%B "The UNIX Programming Environment"
+.%I "Prentice Hall"
+.%D 1984
+.Re
+.Sh HISTORY
 An
-.B pick
+.Nm
 utility appeared as an exemple in the book
-.IR "The UNIX Programming Environment" ,
-by Brian W' Kernighan and Rob Pike.
+.Rs
+.%B "The UNIX Programming Environment"
+.Re

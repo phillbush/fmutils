@@ -2,48 +2,48 @@
 # pick: select arguments
 # this file in public domain
 
-quoting_style="${QUOTING_STYLE:literal}"
+quoting_style="${QUOTING_STYLE:-"literal"}"
 delimiter='
-'
-IFS='
 '
 
 usage() {
-	echo "usage: pick [-bnq] arg..." >&2
+	echo "usage: pick [-bnq] [-d delimiter] arg..." >&2
 	exit 1
 }
 
 pick() {
 	# print prompt to terminal and read response from terminal
-	printf "%s? " "$i" >/dev/tty
-	read response </dev/tty
-
+	printf "%s? " "$1" >/dev/tty
+	read -r response </dev/tty
 	case "$response" in
 	y*|s*)
 		if [ "$quoting_style" = "escape" ]
 		then
-			printf "%s" "$i" | sed "s/\\([ 	]\\)/\\\\\\1/g; s/'/\\\\'/g"
+			printf "%s" "$1" | sed "s/\\([ 	]\\)/\\\\\\1/g; s/'/\\\\'/g"
 		elif [ "$quoting_style" = "shell" ]
 		then
 			printf "'"
-			printf "%s" "$i" | sed "s/'/'\\\\''/g"
+			printf "%s" "$1" | sed "s/'/'\\\\''/g"
 			printf "'"
 		else
-			printf "%s" "$i" | sed "s/'/\\\\'/g"
+			printf "%s" "$1" | sed "s/'/\\\\'/g"
 		fi
 		printf "%s" "$delimiter"
 		;;
 	q*)
-		exit 1
+		exit 0
 		;;
 	esac
 }
 
-while getopts 'bqn' c
+while getopts 'bd:qn' c
 do
 	case "$c" in
 	b)
 		quoting_style="escape"
+		;;
+	d)
+		delimiter="$OPTARG"
 		;;
 	q)
 		quoting_style="shell"
@@ -58,18 +58,18 @@ do
 done
 shift $((OPTIND -1))
 
-if [ $# -eq 0 ]
+if test "$#" -eq 0
 then
 	usage
-elif [ $# -eq 1 -a $1 = '-' ]
+elif test "$#" -eq 1 && test "$1" = '-'
 then
-	while read -r i
+	while read -r arg
 	do
-		pick "$i"
+		pick "$arg"
 	done
 else
-	for i
+	for arg
 	do
-		pick "$i"
+		pick "$arg"
 	done
 fi
