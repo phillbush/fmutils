@@ -21,13 +21,7 @@ all:
 	@echo no need to build
 
 install:
-	@for prog in ${PROGS} ; do \
-		echo "installing $$prog" ; \
-		install -D -m 755 "$$prog" ${DESTDIR}${PREFIX}/bin/"$$prog" ; \
-		done
-	@for man in ${MANS} ; do \
-		echo "installing $$man" ; \
-		install -D -m 644 "$$man" ${DESTDIR}${MANPREFIX}/man1/"$$man" ; \
-		done
+	install -D -m 755 ${PROGS} ${DESTDIR}${PREFIX}/bin/
+	install -D -m 644 ${MANS} ${DESTDIR}${MANPREFIX}/man1/
 
 .PHONY: all install
