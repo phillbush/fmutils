@@ -55,8 +55,8 @@ img() {
 		# compute stuff
 		FONT_W="$(( WIN_W / COLUMNS ))"
 		FONT_H="$(( WIN_H / LINES ))"
-		MAX_W="$(( FONT_W * (W - 2) ))"
-		MAX_H="$(( FONT_H * (H - 2) ))"
+		MAX_W="$(( FONT_W * (W - 3) ))"
+		MAX_H="$(( FONT_H * (H - 3) ))"
 		FINAL_X="$(( FONT_W * (X + 1) ))"
 		FINAL_Y="$(( FONT_H * (Y + 1) ))"
 		FINAL_W="$IMG_W"
@@ -75,9 +75,17 @@ img() {
 		fi
 
 		# perform w3m(1) black magic
-		printf '6;%s;%s;%s;%s;\n0;1;%s;%s;%s;%s;;;;;%s\n4;\n3;\n' \
-		"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" \
-		"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" "$filename" | w3mimgdisplay
+		if test "$cmdname" = "unpreview"
+		then
+			FINAL_W="$((FINAL_W + FONT_W))"
+			FINAL_H="$((FINAL_H + FONT_H))"
+			printf '6;%s;%s;%s;%s;\n4;\n3;\n' \
+			"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" | w3mimgdisplay
+		else
+			printf '6;%s;%s;%s;%s;\n0;1;%s;%s;%s;%s;;;;;%s\n4;\n3;\n' \
+			"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" \
+			"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" "$filename" | w3mimgdisplay
+		fi
 	}
 }
 
@@ -85,30 +93,45 @@ img() {
 preview() {
 	case "$2" in
 	"")
-		echo '----- File Type Classification -----'
-		file -b "$1"
+		if test "$cmdname" != "unpreview"
+		then
+			echo '----- File Type Classification -----'
+			file -b "$1"
+		fi
 		exit
 		;;
 	a|ace|alz|arc|arj|bz|bz2|cab|cpio|deb|gz|jar|lha|lz|lzh|lzma|lzo|\
 	rpm|rz|t7z|tar|tbz|tbz2|tgz|tlz|txz|tZ|tzo|war|xpi|xz|Z|zip|7z)
-		bsdtar -tf "$1"
+		if test "$cmdname" != "unpreview"
+		then
+			bsdtar -tf "$1"
+		fi
 		exit
 		;;
 	pdf)
-		pdftotext -layout -- "$1" -
+		if test "$cmdname" != "unpreview"
+		then
+			pdftotext -layout -- "$1" -
+		fi
 		exit
 		;;
 	htm|html|xhtml)
-		w3m -dump "$1"
+		if test "$cmdname" != "unpreview"
+		then
+			w3m -dump "$1"
+		fi
 		exit
 		;;
 	1|2|3|4|5|6|7|8|9)
-		MANWIDTH="$W" man -Tutf8 -l "$1" | sed 's/.//g'
+		if test "$cmdname" != "unpreview"
+		then
+			MANWIDTH="$W" man -Tutf8 -l "$1" | sed 's/.//g'
+		fi
 		exit
 		;;
 	text/*|*/xml|application/x-shellscript)
-		cat "$1"
-		exit
+			cat "$1"
+			exit
 		;;
 	image/svg+xml)
 		if test "$IMG" -eq 1
@@ -117,7 +140,8 @@ preview() {
 			[ -f "$cache" ] || rsvg-convert "$1" >"$cache"
 			img "$cache"
 			exit 1
-		else
+		elif test "$cmdname" != "unpreview"
+		then
 			cat "$1"
 			exit
 		fi
@@ -127,7 +151,8 @@ preview() {
 		then
 			img "$1"
 			exit 1
-		else
+		elif test "$cmdname" != "unpreview"
+		then
 			exiftool "$1"
 			exit
 		fi
@@ -139,19 +164,24 @@ preview() {
 			[ -f "$cache" ] || ffmpegthumbnailer -i "$1" -o "$cache" -s 0
 			img "$cache"
 			exit 1
-		else
+		elif test "$cmdname" != "unpreview"
+		then
 			mediainfo "$1"
 			exit
 		fi
 		exit
 		;;
 	audio/*|application/octet-stream)
-		mediainfo "$1"
+		if test "$cmdname" != "unpreview"
+		then
+			mediainfo "$1"
+		fi
 		exit
 		;;
 	esac
 }
 
+cmdname="${0##*/}"
 case "$#" in
 1)
 	W=72

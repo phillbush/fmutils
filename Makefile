@@ -20,7 +20,10 @@ MANS = bulkrename.1 \
 all:
 	@echo no need to build
 
-install:
+unpreview: preview
+	cp preview unpreview
+
+install: unpreview
 	install -D -m 755 ${PROGS} ${DESTDIR}${PREFIX}/bin/
 	install -D -m 644 ${MANS} ${DESTDIR}${MANPREFIX}/man1/
 
