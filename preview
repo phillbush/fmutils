@@ -22,7 +22,7 @@ getfilemime() {
 # get cached file
 getcache() {
 	mkdir -p "$previewdir"
-	printf "%s/%s" "$previewdir" "$(stat "$1" | sha256)"
+	printf "%s/%s" "$previewdir" "$(stat "$1" | sha256).png"
 }
 
 # preview image
@@ -133,11 +133,20 @@ preview() {
 			cat "$1"
 			exit
 		;;
-	image/svg+xml)
-		if test "$IMG" -eq 1
+	xpm|xbm)
+		if test "$IMG" -eq 1 && cache="$(getcache "$1")" && [ -f "$cache" ] || convert "$1" "$cache"
 		then
-			cache="$(getcache "$1")"
-			[ -f "$cache" ] || rsvg-convert "$1" >"$cache"
+			img "$cache"
+			exit 1
+		elif test "$cmdname" != "unpreview"
+		then
+			cat "$1"
+			exit
+		fi
+		;;
+	image/svg+xml)
+		if test "$IMG" -eq 1 && cache="$(getcache "$1")" && [ -f "$cache" ] || rsvg-convert "$1" >"$cache"
+		then
 			img "$cache"
 			exit 1
 		elif test "$cmdname" != "unpreview"
@@ -158,10 +167,8 @@ preview() {
 		fi
 		;;
 	video/*)
-		if test "$IMG" -eq 1
+		if test "$IMG" -eq 1 && cache="$(getcache "$1")" && [ -f "$cache" ] || ffmpegthumbnailer -i "$1" -o "$cache" -s 0
 		then
-			cache="$(getcache "$1")"
-			[ -f "$cache" ] || ffmpegthumbnailer -i "$1" -o "$cache" -s 0
 			img "$cache"
 			exit 1
 		elif test "$cmdname" != "unpreview"
