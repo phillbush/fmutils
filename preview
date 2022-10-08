@@ -55,33 +55,38 @@ img() {
 		# compute stuff
 		FONT_W="$(( WIN_W / COLUMNS ))"
 		FONT_H="$(( WIN_H / LINES ))"
-		MAX_W="$(( FONT_W * (W - 3) ))"
-		MAX_H="$(( FONT_H * (H - 3) ))"
-		FINAL_X="$(( FONT_W * (X + 1) ))"
-		FINAL_Y="$(( FONT_H * (Y + 1) ))"
-		FINAL_W="$IMG_W"
-		FINAL_H="$IMG_H"
-
-		# resize image
-		if test "$FINAL_H" -gt "$MAX_H"
-		then
-			FINAL_W="$(( FINAL_W * MAX_H / FINAL_H ))"
-			FINAL_H="$MAX_H"
-		fi
-		if test "$FINAL_W" -gt "$MAX_W"
-		then
-			FINAL_H="$(( FINAL_H * MAX_W / FINAL_W ))"
-			FINAL_W="$MAX_W"
-		fi
 
 		# perform w3m(1) black magic
 		if test "$cmdname" = "unpreview"
 		then
+			FINAL_X="$(( FONT_W * ( X + 1 ) ))"
+			FINAL_Y="$(( FONT_H * ( Y + 1 ) ))"
+			FINAL_W="$(( FONT_W * ( W - 2 ) ))"
+			FINAL_H="$(( FONT_H * ( H - 2 ) ))"
+
 			FINAL_W="$((FINAL_W + FONT_W))"
 			FINAL_H="$((FINAL_H + FONT_H))"
 			printf '6;%s;%s;%s;%s;\n4;\n3;\n' \
 			"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" | w3mimgdisplay
 		else
+			MAX_W="$(( FONT_W * (W - 3) ))"
+			MAX_H="$(( FONT_H * (H - 3) ))"
+			FINAL_X="$(( FONT_W * (X + 1) ))"
+			FINAL_Y="$(( FONT_H * (Y + 1) ))"
+			FINAL_W="$IMG_W"
+			FINAL_H="$IMG_H"
+			# resize image
+			if test "$FINAL_H" -gt "$MAX_H"
+			then
+				FINAL_W="$(( FINAL_W * MAX_H / FINAL_H ))"
+				FINAL_H="$MAX_H"
+			fi
+			if test "$FINAL_W" -gt "$MAX_W"
+			then
+				FINAL_H="$(( FINAL_H * MAX_W / FINAL_W ))"
+				FINAL_W="$MAX_W"
+			fi
+
 			printf '6;%s;%s;%s;%s;\n0;1;%s;%s;%s;%s;;;;;%s\n4;\n3;\n' \
 			"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" \
 			"$FINAL_X" "$FINAL_Y" "$FINAL_W" "$FINAL_H" "$filename" | w3mimgdisplay
