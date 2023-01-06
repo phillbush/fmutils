@@ -69,7 +69,7 @@ do
 	then
 		# line does nothing
 		:
-	elif i=0 && for arg ; do test "$((i++))" -lt "$nargs" && test "$target" = "$arg" && break ; done
+	elif for arg ; do test "${i:-0}" -lt "$nargs" && test "$target" = "$arg" && break ; done
 	then
 		# line renaming creates filename collision; get unique filename
 		unique="$source"
@@ -79,6 +79,7 @@ do
 		done
 		set -- "$@" "mv0" "$source" "$unique"
 		set -- "$@" "mv1"  "$unique" "$target"
+		i="$((i+1))"
 	else
 		# line is a renaming without collision
 		set -- "$@" "mv0" "$source" "$target"
