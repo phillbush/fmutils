@@ -4,11 +4,30 @@
 
 EDITOR="${EDITOR:-"${VISUAL:-"vi"}"}"
 
+err() {
+	printf "%s: %s\n" "${0##*/}" "$@" >&2
+	exit 1
+}
+
+hascollision() {
+	i=0
+	for arg
+	do
+		if test "$i" -lt "$nargs"
+		then
+			test "$target" = "$arg" && return
+		else
+			break
+		fi
+		i=$((i+1))
+	done
+	false
+}
+
 # create temporary files
 if ! tmpfile="$(mktemp)"
 then
-	printf "bulkrename: could not make temporary file\n" >&2
-	exit 1
+	err "could not make temporary file"
 fi
 trap 'rm -f "$tmpfile"' EXIT
 
@@ -27,22 +46,18 @@ for arg
 do
 	case "$arg" in
 	("")
-		printf "bulkrename: empty argument\n" >&2
-		exit 1
+		err "empty argument"
 		;;
 	(*[[:cntrl:]]*)
-		printf "bulkrename: control characters in filenames are not supported\n" >&2
-		exit 1
+		err "control characters in filenames are not supported"
 		;;
 	([[:space:]]*|*[[:space:]])
-		printf "bulkrename: filenames beginning or ending in space is not supported\n" >&2
-		exit 1
+		err "filenames beginning or ending in space is not supported"
 		;;
 	esac
 	if ! test -e "$arg"
 	then
-		printf "bulkrename: %s: file does not exist\n" "$arg" >&2
-		exit 1
+		err "$arg: file does not exist"
 	fi
 	printf "%s\n" "$arg" >> "$tmpfile"
 done
@@ -69,7 +84,7 @@ do
 	then
 		# line does nothing
 		:
-	elif i=0 && for arg ; do test "$((i++))" -lt "$nargs" && test "$target" = "$arg" && break ; done
+	elif hascollision "$@"
 	then
 		# line renaming creates filename collision; get unique filename
 		unique="$source"
@@ -88,6 +103,8 @@ do
 	shift
 	nargs="$((nargs - 1))"
 done <"$tmpfile"
+
+# remove remaining arguments (in case file has more lines than we have files)
 shift "$nargs"
 
 # perform the commands specified in the argument list
@@ -112,8 +129,7 @@ do
 		break
 		;;
 	(*)
-		printf "bulkrename: unknown command %s\n" "$1" >&2
-		exit 1
+		err "$1: unknown command"
 		;;
 	esac
 done
@@ -128,8 +144,7 @@ do
 		shift 3
 		;;
 	(*)
-		printf "bulkrename: unknown command %s\n" "$1" >&2
-		exit 1
+		err "$1: unknown command"
 		;;
 	esac
 done
