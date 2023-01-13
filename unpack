@@ -2,6 +2,12 @@
 # unpack - unarchive archive files
 # this file in public domain
 
+err()
+{
+	printf 'unpack: %s\n' "$1" >&2
+	exit 1
+}
+
 usage()
 {
 	echo "usage: unpack file [destdir]" >&2
@@ -14,58 +20,34 @@ case "$#" in
 (*) usage              ;;
 esac
 
-if [ ! -f "$1" ]
-then
-	printf "unpack: %s: not a regular file\n" "$1"
-	exit 1
-fi
-
-if [ ! -d "$2" ]
-then
-	printf "unpack: %s: not a regular file\n" "$2"
-	exit 1
-fi
+test -f "$1" || err "$1: not a regular file"
+test -d "$2" || err "$2: not a regular directory"
 
 case "$(file -ib -- "$1" | cut -d';' -f1 | cut -d'/' -f2)" in
 gzip|x-gzip)
-	tar xzvf "$1" -C "$2" >/dev/null || {
-	echo "Package can not be extracted, try to install 'tar'" &&
-	exit 1 ; }
+	tar xzvf "$1" -C "$2" >/dev/null || err "extraction failed"
 	;;
 bzip2|x-bzip2)
-	tar xjvf "$1" -C "$2" >/dev/null || {
-	echo "Package can not be extracted, try to install 'tar'" &&
-	exit 1 ; }
+	tar xjvf "$1" -C "$2" >/dev/null || err "extraction failed"
 	;;
 tar|x-tar)
-	tar xvf "$1" -C "$2" >/dev/null || {
-	echo "Package can not be extracted, try to install 'tar'" &&
-	exit 1 ; }
+	tar xvf "$1" -C "$2" >/dev/null || err "extraction failed"
 	;;
 zip)
-	unzip -d "$2" -- "$1" >/dev/null || {
-	echo "Package can not be extracted, try to install 'unzip'" &&
-	exit 1 ; }
+	unzip -d "$2" -- "$1" >/dev/null || err "extraction failed"
 	;;
 x-rar)
-	unrar x "$1" "$2" >/dev/null || {
-	echo "Package can not be extracted, try to install 'unrar'" &&
-	exit 1 ; }
+	unrar x "$1" "$2" >/dev/null || err "extraction failed"
 	;;
 x-7z-compressed)
-	7z x -o"$2" "$1" >/dev/null || {
-	echo "Package can not be extracted, try to install '7-zip'" &&
-	exit 1 ; }
+	7z x -o"$2" "$1" >/dev/null || err "extraction failed"
 	;;
 x-xz)
-	xzcat "$1" | tar xvf - -C "$2" >/dev/null || {
-	echo "Package can not be extracted, try to install 'xz'" &&
-	exit 1 ; }
+	xzcat "$1" | tar xvf - -C "$2" >/dev/null || err "extraction failed"
 	;;
 *)
-	printf "unpack: %s: not an archive file\n" "$1"
-	exit 1
+	err "%s: unknown archive file"
 	;;
 esac
 
-printf "extracted %s to %s\n" "$1" "$2"
+printf "%s -> %s\n" "$1" "$2"
